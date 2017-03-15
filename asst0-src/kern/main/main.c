@@ -132,8 +132,6 @@ boot(void)
 	kprintf_bootstrap();
 	thread_start_cpus();
 
-	complex_hello();
-
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */
 	vfs_setbootfs("emu0");
 
@@ -215,6 +213,8 @@ void
 kmain(char *arguments)
 {
 	boot();
+
+	complex_hello();
 
 	menu(arguments);
 
