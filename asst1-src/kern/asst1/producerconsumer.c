@@ -1,5 +1,7 @@
 /* This file will contain your solution. Modify it as you wish. */
 #include <types.h>
+
+#include <synch.h>  /* for P(), V(), sem_* */
 #include "producerconsumer_driver.h"
 
 /* Declare any variables you need here to keep track of and
@@ -7,6 +9,12 @@
    below. You can change this if you choose another implementation. */
 
 static struct pc_data buffer[BUFFER_SIZE];
+int buf_start;
+int buf_end;
+
+static struct semaphore *empty;
+static struct semaphore *full;
+static struct semaphore *mutex;
 
 
 /* consumer_receive() is called by a consumer to request more data. It
@@ -15,15 +23,20 @@ static struct pc_data buffer[BUFFER_SIZE];
 
 struct pc_data consumer_receive(void)
 {
-        struct pc_data thedata;
+	struct pc_data thedata;
 
-        (void) buffer; /* remove this line when you start */
+	P(full);
+	P(mutex);
 
-        /* FIXME: this data should come from your buffer, obviously... */
-        thedata.item1 = 1;
-        thedata.item2 = 2;
+	thedata = buffer[buf_start];
+	buf_start++;
+	if(buf_start==BUFFER_SIZE)
+		buf_start = 0;
 
-        return thedata;
+	V(mutex);
+	V(empty);
+
+	return thedata;
 }
 
 /* procucer_send() is called by a producer to store data in your
@@ -31,7 +44,16 @@ struct pc_data consumer_receive(void)
 
 void producer_send(struct pc_data item)
 {
-        (void) item; /* Remove this when you add your code */
+	P(empty);
+	P(mutex);
+
+	buffer[buf_end] = item;
+	buf_end++;
+	if(buf_end==BUFFER_SIZE)
+		buf_end = 0;
+
+	V(mutex);
+	V(full);
 }
 
 
@@ -42,10 +64,27 @@ void producer_send(struct pc_data item)
 
 void producerconsumer_startup(void)
 {
+	int i = 0;
+
+	buf_start = 0;
+	buf_end = 0;
+
+	for(i=0;i<BUFFER_SIZE;i++){
+		buffer[i].item1 = 0;
+		buffer[i].item2 = 0;
+	}
+
+	empty = sem_create("empty", BUFFER_SIZE);
+	full = sem_create("full", 0);
+	mutex = sem_create("mutex", 1);
+
 }
 
 /* Perform any clean-up you need here */
 void producerconsumer_shutdown(void)
 {
+	sem_destroy(empty);
+	sem_destroy(full);
+	sem_destroy(mutex);
 }
 

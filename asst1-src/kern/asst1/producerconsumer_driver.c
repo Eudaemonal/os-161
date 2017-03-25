@@ -44,6 +44,9 @@
 static struct semaphore *consumer_finished;
 static struct semaphore *producer_finished;
 
+
+
+
 /* The producer thread's only function. This function calls
  * producer_send ITEMS_TO_PRODUCE times and then exits. NUM_PRODUCERS
  * threads are started to run the function.
@@ -59,6 +62,7 @@ producer_thread(void *unused_ptr, unsigned long thread_num)
         kprintf("Producer started\n");
 
         while(items_to_go > 0) {
+
                 thedata.item1 = items_to_go + (1000 * thread_num);
                 /* Set second data item as related to the first so that
                  * the consumer can check both numbers are valid
@@ -68,6 +72,8 @@ producer_thread(void *unused_ptr, unsigned long thread_num)
                 producer_send(thedata);
 
                 items_to_go = items_to_go - 1;
+				//kprintf("prod: %d - %d - %d\n",items_to_go, thedata.item1, thedata.item2);  //test
+
         }
 
         /* No more items... Signal that we're done. */
@@ -110,7 +116,11 @@ consumer_thread(void *unused_ptr, unsigned long thread_num)
                 }
 
                 thedata = consumer_receive();
+
         }
+
+		//kprintf("con: %d - %d - %d\n",check_count, thedata.item1, thedata.item1);//test
+
 
         if (check_count >= SOMETHING_WRONG_COUNT) {
                 kprintf("*** Error! Consumer exiting...\n");
@@ -212,6 +222,8 @@ run_producerconsumer(int nargs, char **args)
 
         /* Initialise synch primitives used in this simulator */
         consumer_finished = sem_create("consumer_finished", 0);
+	
+
         if(!consumer_finished) {
                 panic("run_producerconsumer: couldn't create semaphore\n");
         }
@@ -239,6 +251,9 @@ run_producerconsumer(int nargs, char **args)
         /* Done! */
         sem_destroy(producer_finished);
         sem_destroy(consumer_finished);
+
+
+
         return 0;
 }
 
